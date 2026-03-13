@@ -1,0 +1,41 @@
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
+// Pines del nRF24L01
+#define CE_PIN 9
+#define CSN_PIN 10
+// Pin del potenciómetro
+#define POT_PIN A0
+RF24 radio(CE_PIN, CSN_PIN);
+const byte address[6] = "ESP32";
+int valorPot;
+int valorEnviar;
+void setup() {
+  Serial.begin(9600);
+  Serial.println("Transmisor con potenciometro");
+  if (!radio.begin()) {
+    Serial.println("ERROR: nRF24 no detectado");
+    while (1);
+  }
+  radio.setPALevel(RF24_PA_MIN);
+  radio.setDataRate(RF24_250KBPS);
+  radio.setChannel(77);
+  radio.openWritingPipe(address);
+  radio.stopListening();
+  Serial.println("Listo. Enviando datos del potenciometro...");
+}
+void loop() {
+  // Leer potenciómetro
+  valorPot = analogRead(POT_PIN);
+  // Convertir de 0-1023 a 0-255
+  valorEnviar = map(valorPot, 0, 1023, 0, 255);
+  // Enviar valor
+  bool enviado = radio.write(&valorEnviar, sizeof(valorEnviar));
+  Serial.print("Potenciometro: ");
+  Serial.print(valorPot);
+  Serial.print(" | Enviado: ");
+  Serial.print(valorEnviar);
+  Serial.print(" -> ");
+  Serial.println(enviado ? "OK" : "FALLO");
+  delay(900);
+}
