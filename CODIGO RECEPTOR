@@ -1,0 +1,66 @@
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
+
+#define CE_PIN 16      
+#define CSN_PIN 10     
+#define SPI_SCK 12     
+#define SPI_MISO 13    
+#define SPI_MOSI 11    
+
+// Creación del objeto radio indicando los pines CE y CSN
+RF24 radio(CE_PIN, CSN_PIN);
+
+// Dirección de comunicación entre transmisor y receptor
+const byte address[6] = "00010";
+
+void setup() {
+
+  // Inicia la comunicación con el monitor serial
+  Serial.begin(115200);
+
+  // Pequeño retraso para asegurar que todo inicie correctamente
+  delay(900);
+
+  // Inicializa la comunicación SPI con los pines definidos
+  SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
+
+  // Verifica si el módulo NRF24 se inicializa correctamente
+  if (!radio.begin()) {
+    Serial.println("Error NRF24"); // Mensaje si el módulo no responde
+    while (1); // Detiene el programa si hay error
+  }
+
+  // Configura la potencia de transmisión del módulo
+  radio.setPALevel(RF24_PA_MIN); // Potencia mínima (útil para pruebas cercanas)
+
+  // Configura la velocidad de transmisión de datos
+  radio.setDataRate(RF24_250KBPS); // Velocidad más estable para mayor alcance
+
+  // Selecciona el canal de comunicación 
+  radio.setChannel(77);
+
+  // Abre un canal de lectura (pipe 1) usando la dirección definida
+  radio.openReadingPipe(1, address);
+
+  // Pone el módulo en modo receptor
+  radio.startListening();
+
+  // Mensaje para confirmar que el receptor está listo
+  Serial.println("Receptor listo");
+}
+
+void loop() {
+
+  // Verifica si hay datos disponibles para recibir
+  if (radio.available()) {
+
+    int sensorValue; // Variable donde se guardará el dato recibido
+
+    // Lee los datos recibidos y los guarda en la variable
+    radio.read(&sensorValue, sizeof(sensorValue));
+
+    Serial.print("Valor recibido: ");
+    Serial.println(sensorValue);
+  }
+}
